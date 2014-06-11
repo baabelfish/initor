@@ -17,19 +17,21 @@ struct Test {
 };
 
 int main() {
+    using namespace initor;
+
     auto wat_parser = initor::Mapper<Test::Wat>::make_parser(
-        "a", initor::toFloat(&Test::Wat::a)
+        "a", toFloat(&Test::Wat::a)
     );
 
     auto test_parser = initor::Mapper<Test>::make_parser(
-        "x", initor::toInteger(&Test::x),
-        "y", initor::toInteger(&Test::y),
-        "z", initor::toString(&Test::z),
+        "x", toInteger(&Test::x),
+        "y", toInteger(&Test::y),
+        "z", toString(&Test::z),
         "s", [](Test& t, std::string v) { t.s = { std::stoi(v) * 2, std::stoi(v) / 2 }; },
-        "nested", initor::Mapper<Test>::useMapper(&Test::nested, wat_parser)
+        "nested", Mapper<Test>::useMapper(&Test::nested, wat_parser)
     );
 
-    auto n = test_parser.init(initor::parseJsonFile("test.json"));
+    auto n = test_parser.init(parseJsonFile("test.json"));
 
     std::cout << "x:      " << n.x << std::endl;
     std::cout << "y:      " << n.y << std::endl;
