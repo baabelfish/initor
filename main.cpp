@@ -16,23 +16,8 @@ struct Test {
     } nested;
 };
 
-template<class T>
-class Jotain : public T {
-public:
-    Jotain() {}
-    virtual ~Jotain() {}
-
-    template<typename Type>
-    void populoi(Type t) {
-        T::clear();
-        T::push_back(t);
-    }
-};
-
 int main() {
     using namespace initor;
-
-    Jotain<std::vector<int>> j;
 
     auto wat_parser = initor::Mapper<Test::Wat>::make_parser(
         "a", &Test::Wat::a
