@@ -2,11 +2,12 @@
 
 #include <iostream>
 
+#include <type_traits>
 #include <memory>
 #include <fstream>
 #include <stdexcept>
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include "lib/picojson/picojson.h"
 #include "helpers.hpp"
 
@@ -70,6 +71,12 @@ public:
         parsers[id] = p;
     }
 
+    template<typename Member,
+             typename std::enable_if<std::is_member_pointer<Member>::value>::type* = nullptr>
+    void addPair(IdentifierType id, Member p) {
+        _addPair(id, p);
+    }
+
     T init(picojson::value doc) const {
         T t;
         for (auto& x : parsers) {
@@ -86,8 +93,8 @@ public:
     }
 
 private:
-    std::map<IdentifierType, SetterType> setters;
-    std::map<IdentifierType, MapperType> parsers;
+    std::unordered_map<IdentifierType, SetterType> setters;
+    std::unordered_map<IdentifierType, MapperType> parsers;
 
     static Mapper<T> _make_parser(Mapper<T> p) { return p; }
 
@@ -95,6 +102,13 @@ private:
     static Mapper<T> _make_parser(Mapper<T> p, IdentifierType f, Second s, Args... args) {
         p.addPair(f, s);
         return _make_parser(p, std::forward<Args>(args)...);
+    }
+
+    template<typename U>
+    void _addPair(IdentifierType id, U T::*member) {
+        parsers[id] = [member](T& t, picojson::value v) {
+            t.*member = internal::to<U>(v);
+        };
     }
 
     picojson::value access(picojson::object obj, std::string key) const {

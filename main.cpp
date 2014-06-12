@@ -16,17 +16,32 @@ struct Test {
     } nested;
 };
 
+template<class T>
+class Jotain : public T {
+public:
+    Jotain() {}
+    virtual ~Jotain() {}
+
+    template<typename Type>
+    void populoi(Type t) {
+        T::clear();
+        T::push_back(t);
+    }
+};
+
 int main() {
     using namespace initor;
 
+    Jotain<std::vector<int>> j;
+
     auto wat_parser = initor::Mapper<Test::Wat>::make_parser(
-        "a", toFloat(&Test::Wat::a)
+        "a", &Test::Wat::a
     );
 
     auto test_parser = initor::Mapper<Test>::make_parser(
-        "x", toInteger(&Test::x),
-        "y", toInteger(&Test::y),
-        "z", toString(&Test::z),
+        "x", &Test::x,
+        "y", &Test::y,
+        "z", &Test::z,
         "s", [](Test& t, std::string v) { t.s = { std::stoi(v) * 2, std::stoi(v) / 2 }; },
         "nested", Mapper<Test>::useMapper(&Test::nested, wat_parser)
     );

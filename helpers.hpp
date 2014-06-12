@@ -2,6 +2,7 @@
 
 #include <string>
 #include <functional>
+#include "lib/picojson/picojson.h"
 
 namespace initor {
 
@@ -36,5 +37,24 @@ template<typename T, typename U>
 inline std::function<void(T&, std::string)> toInteger(U T::*member) {
     return to(member, [](std::string v) { return std::stoi(v); });
 }
+
+namespace internal {
+
+template<typename T>
+T to(picojson::value in) {
+    return in.get<T>();
+}
+
+template<>
+float to<float>(picojson::value in) {
+    return static_cast<float>(in.get<double>());
+}
+
+template<>
+int to<int>(picojson::value in) {
+    return std::stoi(in.to_str());
+}
+
+} // namespace internal
 
 } // namespace initor
