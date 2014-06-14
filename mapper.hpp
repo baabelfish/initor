@@ -8,8 +8,8 @@
 #include <stdexcept>
 #include <functional>
 #include <unordered_map>
-#include "lib/picojson/picojson.h"
 #include "helpers.hpp"
+#include "lib/picojson/picojson.h"
 
 namespace initor {
 
@@ -107,7 +107,15 @@ private:
     template<typename U>
     void _addPair(IdentifierType id, U T::*member) {
         parsers[id] = [member](T& t, picojson::value v) {
-            t.*member = internal::to<U>(v);
+            if (v.is<picojson::array>()) {
+                t.*member = internal::to<U>(v);
+            }
+            else if (v.is<picojson::object>()) {
+                t.*member = internal::to<U>(v);
+            }
+            else {
+                t.*member = internal::to<U>(v);
+            }
         };
     }
 

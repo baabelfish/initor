@@ -8,6 +8,7 @@ struct Something {
 struct Test {
     int x;
     int y;
+    std::vector<int> vec;
     std::string z;
     Something s;
 
@@ -27,6 +28,7 @@ int main() {
         "x", &Test::x,
         "y", &Test::y,
         "z", &Test::z,
+        "vec", &Test::vec,
         "s", [](Test& t, std::string v) { t.s = { std::stoi(v) * 2, std::stoi(v) / 2 }; },
         "nested", Mapper<Test>::useMapper(&Test::nested, wat_parser)
     );
@@ -39,6 +41,10 @@ int main() {
     std::cout << "s.a:    " << n.s.a << std::endl;
     std::cout << "s.b:    " << n.s.b << std::endl;
     std::cout << "nested: " << n.nested.a << std::endl;
+
+    std::cout << "vec:    ";
+    for (auto& x : n.vec) { std::cout << x << " "; }
+    std::cout << std::endl;
 
     return 0;
 }
