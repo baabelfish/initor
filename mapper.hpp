@@ -1,10 +1,16 @@
 #pragma once
 
+#define PICOJSON_USE_INT64
+
 #include <iostream>
 
+#include <deque>
+#include <set>
+#include <unordered_set>
 #include <type_traits>
 #include <memory>
 #include <fstream>
+#include <list>
 #include <stdexcept>
 #include <functional>
 #include <unordered_map>
@@ -43,7 +49,6 @@ template<class T>
 class Mapper : public BaseMapper {
 public:
     typedef std::string IdentifierType;
-    typedef std::function<void(T&, std::string)> SetterType;
     typedef std::function<void(T&, picojson::value)> MapperType;
 
     template<typename... Args>
@@ -63,10 +68,6 @@ public:
 
     virtual ~Mapper() {}
 
-    void addPair(IdentifierType id, SetterType st) {
-        setters[id] = st;
-    }
-
     void addPair(IdentifierType id, MapperType p) {
         parsers[id] = p;
     }
@@ -85,15 +86,10 @@ public:
                 pit->second(t, access(doc, x.first));
             }
         }
-        for (auto& x : setters) {
-            try { x.second(t, access(doc, x.first).to_str()); }
-            catch (std::runtime_error) {}
-        }
         return t;
     }
 
 private:
-    std::unordered_map<IdentifierType, SetterType> setters;
     std::unordered_map<IdentifierType, MapperType> parsers;
 
     static Mapper<T> _make_parser(Mapper<T> p) { return p; }
@@ -104,18 +100,26 @@ private:
         return _make_parser(p, std::forward<Args>(args)...);
     }
 
+#define _GEN_ADD_CONPAIR(TYPE)\
+template<typename U>\
+void _addPair(IdentifierType id, std::TYPE<U> T::*member) {\
+    parsers[id] = [member](T& t, picojson::value v) {\
+        t.*member = internal::toContainer<std::TYPE<U>>(v);\
+    };\
+}
+
+    _GEN_ADD_CONPAIR(list)
+    _GEN_ADD_CONPAIR(vector)
+    _GEN_ADD_CONPAIR(deque)
+    _GEN_ADD_CONPAIR(set)
+    _GEN_ADD_CONPAIR(multiset)
+    _GEN_ADD_CONPAIR(unordered_set)
+    _GEN_ADD_CONPAIR(unordered_multiset)
+
     template<typename U>
     void _addPair(IdentifierType id, U T::*member) {
         parsers[id] = [member](T& t, picojson::value v) {
-            if (v.is<picojson::array>()) {
-                t.*member = internal::to<U>(v);
-            }
-            else if (v.is<picojson::object>()) {
-                t.*member = internal::to<U>(v);
-            }
-            else {
-                t.*member = internal::to<U>(v);
-            }
+            t.*member = internal::to<U>(v);
         };
     }
 

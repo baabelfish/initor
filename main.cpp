@@ -1,5 +1,7 @@
 #include "mapper.hpp"
 
+#include <list>
+
 struct Something {
     int a;
     int b;
@@ -9,6 +11,8 @@ struct Test {
     int x;
     int y;
     std::vector<int> vec;
+    std::list<float> lis;
+    std::set<float> set;
     std::string z;
     Something s;
 
@@ -29,7 +33,9 @@ int main() {
         "y", &Test::y,
         "z", &Test::z,
         "vec", &Test::vec,
-        "s", [](Test& t, std::string v) { t.s = { std::stoi(v) * 2, std::stoi(v) / 2 }; },
+        "list", &Test::lis,
+        "set", &Test::set,
+        "s", [](Test& t, picojson::value v) { t.s = { std::stoi(v.to_str()), 0 }; },
         "nested", Mapper<Test>::useMapper(&Test::nested, wat_parser)
     );
 
@@ -44,6 +50,14 @@ int main() {
 
     std::cout << "vec:    ";
     for (auto& x : n.vec) { std::cout << x << " "; }
+    std::cout << std::endl;
+
+    std::cout << "list:   ";
+    for (auto& x : n.lis) { std::cout << x << " "; }
+    std::cout << std::endl;
+
+    std::cout << "set:    ";
+    for (auto& x : n.set) { std::cout << x << " "; }
     std::cout << std::endl;
 
     return 0;
