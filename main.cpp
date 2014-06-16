@@ -10,6 +10,7 @@ struct Something {
 struct Test {
     int x;
     int y;
+    std::unordered_map<int, std::string> map;
     std::vector<int> vec;
     std::list<float> lis;
     std::set<float> set;
@@ -62,6 +63,7 @@ int main() {
         "vec", &Test::vec,
         "list", &Test::lis,
         "set", &Test::set,
+        "map", &Test::map,
         "s", [](Test& t, picojson::value v) { t.s = { std::stoi(v.to_str()), 0 }; },
         "nested", Mapper<Test>::mapper(&Test::nested, wat_parser),
         "nestedList", Mapper<Test>::containerMapper(&Test::smt, smt_parser)
@@ -92,6 +94,10 @@ int main() {
     std::cout << "smt:     ";
     for (auto& x : n.smt) { std::cout << "{" << x.a << ", " << x.b << "}, "; }
     std::cout << std::endl;
+
+    std::cout << "map:     { ";
+    for (auto& x : n.map) { std::cout << "{" << x.first << ", \"" << x.second << "\"}, "; }
+    std::cout << "}" << std::endl;
 
     return 0;
 }

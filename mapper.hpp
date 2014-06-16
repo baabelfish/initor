@@ -139,6 +139,14 @@ private:
         };
     }
 
+    template<typename U>
+    void _addSetter(IdentifierType id, U T::*member) {
+        parsers[id] = [member](T& t, picojson::value v) {
+            typedef typename cu::tmp::function_traits<U>::template argument<0>::type argtype;
+            (t.*member)(internal::to<argtype>(v));
+        };
+    }
+
     _GEN_ADD_CONPAIR(list)
     _GEN_ADD_CONPAIR(vector)
     _GEN_ADD_CONPAIR(deque)
@@ -147,12 +155,24 @@ private:
     _GEN_ADD_CONPAIR(unordered_set)
     _GEN_ADD_CONPAIR(unordered_multiset)
 
-    template<typename U>
-    void _addSetter(IdentifierType id, U T::*member) {
-        parsers[id] = [member](T& t, picojson::value v) {
-            typedef typename cu::tmp::function_traits<U>::template argument<0>::type argtype;
-            (t.*member)(internal::to<argtype>(v));
-        };
+    template<typename M, typename K = typename M::key_type, typename V = typename M::mapped_type>
+    static void _mapHelper(M& map, picojson::value v) {
+            auto vo = v.get<picojson::object>();
+            for (auto& x : vo) {
+                auto key = internal::toStr<K>(x.first);
+                auto value = internal::to<V>(x.second);
+                map.insert(std::make_pair(key, value));
+            }
+    }
+
+    template<typename K, typename V>
+    void _addPair(IdentifierType id, std::unordered_map<K, V> T::*member) {
+        parsers[id] = [member](T& t, picojson::value v) { _mapHelper(t.*member, v); };
+    }
+
+    template<typename K, typename V>
+    void _addPair(IdentifierType id, std::map<K, V> T::*member) {
+        parsers[id] = [member](T& t, picojson::value v) { _mapHelper(t.*member, v); };
     }
 
     template<typename U>
