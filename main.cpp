@@ -38,7 +38,7 @@ private:
 int main() {
     using namespace initor;
 
-    auto test_mapper = initor::Mapper<Test>::make_parser(
+    auto test_mapper = initor::Mapper<Test>::makeParser(
         "x", &Test::x,
         "y", &Test::y,
         "z", &Test::z,
@@ -48,10 +48,10 @@ int main() {
         "set", &Test::set,
         "map", &Test::map,
         "s", [](Test& t, picojson::value v) { t.s = { std::stoi(v.to_str()), 0 }; },
-        "nested", Mapper<Test>::mapper(&Test::nested, initor::Mapper<Test::Wat>::make_parser(
+        "nested", Mapper<Test>::mapper(&Test::nested, Mapper<Test::Wat>::makeParser(
             "a", &Test::Wat::a
         )),
-        "nestedList", Mapper<Test>::containerMapper(&Test::smt, initor::Mapper<Something>::make_parser(
+        "nestedList", Mapper<Test>::containerMapper(&Test::smt, Mapper<Something>::makeParser(
             "a", &Something::a,
             "b", &Something::b
         ))

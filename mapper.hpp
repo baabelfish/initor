@@ -66,9 +66,9 @@ public:
     typedef std::function<void(T&, picojson::value)> MapperType;
 
     template<typename... Args>
-    static Mapper<T> make_parser(Args... args) {
+    static Mapper<T> makeParser(Args... args) {
         Mapper<T> p;
-        return _make_parser(p, std::forward<Args>(args)...);
+        return _makeParser(p, std::forward<Args>(args)...);
     }
 
     template<typename A, typename B>
@@ -114,12 +114,12 @@ public:
 private:
     std::unordered_map<IdentifierType, MapperType> parsers;
 
-    static Mapper<T> _make_parser(Mapper<T> p) { return p; }
+    static Mapper<T> _makeParser(Mapper<T> p) { return p; }
 
     template<typename Second, typename... Args>
-    static Mapper<T> _make_parser(Mapper<T> p, IdentifierType f, Second s, Args... args) {
+    static Mapper<T> _makeParser(Mapper<T> p, IdentifierType f, Second s, Args... args) {
         p.addPair(f, s);
-        return _make_parser(p, std::forward<Args>(args)...);
+        return _makeParser(p, std::forward<Args>(args)...);
     }
 
     template<typename U, typename Mapper>
