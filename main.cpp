@@ -23,14 +23,6 @@ struct Test {
 
     std::vector<Something> smt;
 
-    void verySecret(int v) {
-        very_secret = v;
-    }
-
-    int verySecret() {
-        return very_secret;
-    }
-
     int getVerySecret() {
         return very_secret;
     }
@@ -46,16 +38,7 @@ private:
 int main() {
     using namespace initor;
 
-    auto wat_parser = initor::Mapper<Test::Wat>::make_parser(
-        "a", &Test::Wat::a
-    );
-
-    auto smt_parser = initor::Mapper<Something>::make_parser(
-        "a", &Something::a,
-        "b", &Something::b
-    );
-
-    auto test_parser = initor::Mapper<Test>::make_parser(
+    auto test_mapper = initor::Mapper<Test>::make_parser(
         "x", &Test::x,
         "y", &Test::y,
         "z", &Test::z,
@@ -65,11 +48,16 @@ int main() {
         "set", &Test::set,
         "map", &Test::map,
         "s", [](Test& t, picojson::value v) { t.s = { std::stoi(v.to_str()), 0 }; },
-        "nested", Mapper<Test>::mapper(&Test::nested, wat_parser),
-        "nestedList", Mapper<Test>::containerMapper(&Test::smt, smt_parser)
+        "nested", Mapper<Test>::mapper(&Test::nested, initor::Mapper<Test::Wat>::make_parser(
+            "a", &Test::Wat::a
+        )),
+        "nestedList", Mapper<Test>::containerMapper(&Test::smt, initor::Mapper<Something>::make_parser(
+            "a", &Something::a,
+            "b", &Something::b
+        ))
     );
 
-    auto n = test_parser.init(parseJsonFile("test.json"));
+    auto n = test_mapper.init(parseJsonFile("test.json"));
 
     std::cout << "x:       " << n.x << std::endl;
     std::cout << "y:       " << n.y << std::endl;
