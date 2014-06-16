@@ -19,6 +19,19 @@ struct Test {
     struct Wat {
         float a;
     } nested;
+
+    std::vector<Something> smt;
+
+    int getVerySecret() {
+        return very_secret;
+    }
+
+    void setVerySecret(int v) {
+        very_secret = v;
+    }
+
+private:
+    int very_secret;
 };
 
 int main() {
@@ -28,35 +41,43 @@ int main() {
         "a", &Test::Wat::a
     );
 
+    auto smt_parser = initor::Mapper<Something>::make_parser(
+        "a", &Something::a,
+        "b", &Something::b
+    );
+
     auto test_parser = initor::Mapper<Test>::make_parser(
         "x", &Test::x,
         "y", &Test::y,
         "z", &Test::z,
+        "very_secret", &Test::setVerySecret,
         "vec", &Test::vec,
         "list", &Test::lis,
         "set", &Test::set,
         "s", [](Test& t, picojson::value v) { t.s = { std::stoi(v.to_str()), 0 }; },
-        "nested", Mapper<Test>::useMapper(&Test::nested, wat_parser)
+        "nested", Mapper<Test>::mapper(&Test::nested, wat_parser)
+        // "nestedList", Mapper<Something>::mapper(&Test::smt, smt_parser)
     );
 
     auto n = test_parser.init(parseJsonFile("test.json"));
 
-    std::cout << "x:      " << n.x << std::endl;
-    std::cout << "y:      " << n.y << std::endl;
-    std::cout << "z:      " << n.z << std::endl;
-    std::cout << "s.a:    " << n.s.a << std::endl;
-    std::cout << "s.b:    " << n.s.b << std::endl;
-    std::cout << "nested: " << n.nested.a << std::endl;
+    std::cout << "x:       " << n.x << std::endl;
+    std::cout << "y:       " << n.y << std::endl;
+    std::cout << "z:       " << n.z << std::endl;
+    std::cout << "s.a:     " << n.s.a << std::endl;
+    std::cout << "s.b:     " << n.s.b << std::endl;
+    std::cout << "nested:  " << n.nested.a << std::endl;
+    std::cout << "vsecret: " << n.getVerySecret() << std::endl;
 
-    std::cout << "vec:    ";
+    std::cout << "vec:     ";
     for (auto& x : n.vec) { std::cout << x << " "; }
     std::cout << std::endl;
 
-    std::cout << "list:   ";
+    std::cout << "list:    ";
     for (auto& x : n.lis) { std::cout << x << " "; }
     std::cout << std::endl;
 
-    std::cout << "set:    ";
+    std::cout << "set:     ";
     for (auto& x : n.set) { std::cout << x << " "; }
     std::cout << std::endl;
 

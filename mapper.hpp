@@ -1,6 +1,22 @@
 #pragma once
 
+#include "lib/cpputils/utils/function_traits.hpp"
+
 #define PICOJSON_USE_INT64
+
+#define _GEN_ADD_CONPAIR(TYPE)\
+template<typename U>\
+void _addPair(IdentifierType id, std::TYPE<U> T::*member) {\
+    parsers[id] = [member](T& t, picojson::value v) {\
+        t.*member = internal::toContainer<std::TYPE<U>>(v);\
+    };\
+}
+
+#define ENABLE_IF_MEMBER_FUNCTION(TYPE)\
+typename std::enable_if<std::is_member_function_pointer<TYPE>::value>::type* = nullptr
+
+#define ENABLE_IF_MEMBER_OBJECT(TYPE)\
+typename std::enable_if<std::is_member_object_pointer<TYPE>::value>::type* = nullptr
 
 #include <iostream>
 
@@ -57,11 +73,9 @@ public:
         return _make_parser(p, std::forward<Args>(args)...);
     }
 
-    template<typename U, typename Mapper>
-    static MapperType useMapper(U T::*member, Mapper pt) {
-        return [=](T& t, picojson::value v) {
-            t.*member = std::move(pt.init(v));
-        };
+    template<typename A, typename B>
+    static MapperType mapper(A member, B pt) {
+        return _mapper(member, pt);
     }
 
     Mapper(): BaseMapper() {}
@@ -73,7 +87,13 @@ public:
     }
 
     template<typename Member,
-             typename std::enable_if<std::is_member_pointer<Member>::value>::type* = nullptr>
+             ENABLE_IF_MEMBER_FUNCTION(Member)>
+    void addPair(IdentifierType id, Member p) {
+        _addSetter(id, p);
+    }
+
+    template<typename Member,
+             ENABLE_IF_MEMBER_OBJECT(Member)>
     void addPair(IdentifierType id, Member p) {
         _addPair(id, p);
     }
@@ -100,13 +120,33 @@ private:
         return _make_parser(p, std::forward<Args>(args)...);
     }
 
-#define _GEN_ADD_CONPAIR(TYPE)\
+#define _GEN_MAPPER(TYPE)\
 template<typename U>\
-void _addPair(IdentifierType id, std::TYPE<U> T::*member) {\
+static void mapper(IdentifierType id, std::TYPE<U> T::*member) {\
     parsers[id] = [member](T& t, picojson::value v) {\
         t.*member = internal::toContainer<std::TYPE<U>>(v);\
     };\
 }
+
+    template<typename U, typename Mapper>
+    static MapperType _mapper(std::vector<U> T::*member, Mapper pt) {
+        return [=](T& t, picojson::value v) {
+            // auto vec = v.get<picojson::array>();
+            // std::vector<U> nvec;
+            // for (auto& x : vec) {
+            //     U u = pt.init(x);
+                // nvec.emplace_back(pt.init(x));
+                // t.*member.insert(t.*member.end(), std::move(pt.init(x)));
+            // }
+        };
+    }
+
+    template<typename U, typename Mapper>
+    static MapperType _mapper(U T::*member, Mapper pt) {
+        return [=](T& t, picojson::value v) {
+            t.*member = std::move(pt.init(v));
+        };
+    }
 
     _GEN_ADD_CONPAIR(list)
     _GEN_ADD_CONPAIR(vector)
@@ -115,6 +155,14 @@ void _addPair(IdentifierType id, std::TYPE<U> T::*member) {\
     _GEN_ADD_CONPAIR(multiset)
     _GEN_ADD_CONPAIR(unordered_set)
     _GEN_ADD_CONPAIR(unordered_multiset)
+
+    template<typename U>
+    void _addSetter(IdentifierType id, U T::*member) {
+        parsers[id] = [member](T& t, picojson::value v) {
+            typedef typename cu::tmp::function_traits<U>::template argument<0>::type argtype;
+            (t.*member)(internal::to<argtype>(v));
+        };
+    }
 
     template<typename U>
     void _addPair(IdentifierType id, U T::*member) {

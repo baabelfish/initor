@@ -4,3 +4,6 @@
 [submodule "lib/picojson"]
 	path = lib/picojson
 	url = https://github.com/kazuho/picojson
+[submodule "lib/cpputils"]
+	path = lib/cpputils
+	url = https://github.com/baabelfish/cpputils
