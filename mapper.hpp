@@ -12,6 +12,9 @@ void _addPair(IdentifierType id, std::TYPE<U> T::*member) {\
     };\
 }
 
+#define ENABLE_IF(...)\
+typename std::enable_if<VA_ARG>::type* = nullptr
+
 #define ENABLE_IF_MEMBER_FUNCTION(TYPE)\
 typename std::enable_if<std::is_member_function_pointer<TYPE>::value>::type* = nullptr
 
@@ -55,15 +58,10 @@ inline picojson::value parseJsonFile(std::string file) {
     throw std::runtime_error("Could not open file: " + file);
 }
 
-class BaseMapper {
-public:
-    BaseMapper() {}
-    virtual ~BaseMapper() {}
-};
-
 template<class T>
-class Mapper : public BaseMapper {
+class Mapper {
 public:
+    typedef T mapper_type;
     typedef std::string IdentifierType;
     typedef std::function<void(T&, picojson::value)> MapperType;
 
@@ -74,12 +72,16 @@ public:
     }
 
     template<typename A, typename B>
+    static MapperType containerMapper(A member, Mapper<B> pt) {
+        return _containerMapper(member, pt);
+    }
+
+    template<typename A, typename B>
     static MapperType mapper(A member, B pt) {
         return _mapper(member, pt);
     }
 
-    Mapper(): BaseMapper() {}
-
+    Mapper() {}
     virtual ~Mapper() {}
 
     void addPair(IdentifierType id, MapperType p) {
@@ -120,24 +122,13 @@ private:
         return _make_parser(p, std::forward<Args>(args)...);
     }
 
-#define _GEN_MAPPER(TYPE)\
-template<typename U>\
-static void mapper(IdentifierType id, std::TYPE<U> T::*member) {\
-    parsers[id] = [member](T& t, picojson::value v) {\
-        t.*member = internal::toContainer<std::TYPE<U>>(v);\
-    };\
-}
-
     template<typename U, typename Mapper>
-    static MapperType _mapper(std::vector<U> T::*member, Mapper pt) {
+    static MapperType _containerMapper(U T::*member, Mapper pt) {
         return [=](T& t, picojson::value v) {
-            // auto vec = v.get<picojson::array>();
-            // std::vector<U> nvec;
-            // for (auto& x : vec) {
-            //     U u = pt.init(x);
-                // nvec.emplace_back(pt.init(x));
-                // t.*member.insert(t.*member.end(), std::move(pt.init(x)));
-            // }
+            auto va = v.get<picojson::array>();
+            for (auto& x : va) {
+                (t.*member).insert((t.*member).end(), pt.init(x));
+            }
         };
     }
 
@@ -183,6 +174,12 @@ static void mapper(IdentifierType id, std::TYPE<U> T::*member) {\
         if (it == obj.end()) { throw std::runtime_error("Key was not found: " + key); }
         return it->second;
     }
+
 };
+
+template<typename U, typename T>
+inline auto cm(U member, Mapper<T> pt) -> decltype(Mapper<T>::containerMapper(member, pt)) {
+    return Mapper<T>::containerMapper(member, pt);
+}
 
 } // namespace initor

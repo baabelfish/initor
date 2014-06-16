@@ -22,6 +22,14 @@ struct Test {
 
     std::vector<Something> smt;
 
+    void verySecret(int v) {
+        very_secret = v;
+    }
+
+    int verySecret() {
+        return very_secret;
+    }
+
     int getVerySecret() {
         return very_secret;
     }
@@ -55,8 +63,8 @@ int main() {
         "list", &Test::lis,
         "set", &Test::set,
         "s", [](Test& t, picojson::value v) { t.s = { std::stoi(v.to_str()), 0 }; },
-        "nested", Mapper<Test>::mapper(&Test::nested, wat_parser)
-        // "nestedList", Mapper<Something>::mapper(&Test::smt, smt_parser)
+        "nested", Mapper<Test>::mapper(&Test::nested, wat_parser),
+        "nestedList", Mapper<Test>::containerMapper(&Test::smt, smt_parser)
     );
 
     auto n = test_parser.init(parseJsonFile("test.json"));
@@ -79,6 +87,10 @@ int main() {
 
     std::cout << "set:     ";
     for (auto& x : n.set) { std::cout << x << " "; }
+    std::cout << std::endl;
+
+    std::cout << "smt:     ";
+    for (auto& x : n.smt) { std::cout << "{" << x.a << ", " << x.b << "}, "; }
     std::cout << std::endl;
 
     return 0;
