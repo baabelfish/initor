@@ -26,6 +26,7 @@ typename std::enable_if<std::is_member_object_pointer<TYPE>::value>::type* = nul
 #include <deque>
 #include <set>
 #include <unordered_set>
+#include <map>
 #include <type_traits>
 #include <memory>
 #include <fstream>
@@ -65,10 +66,21 @@ public:
     typedef std::string IdentifierType;
     typedef std::function<void(T&, picojson::value)> MapperType;
 
+    static Mapper<T> global() {
+        return globalMapper();
+    }
+
     template<typename... Args>
-    static Mapper<T> makeParser(Args... args) {
+    static Mapper<T> createGlobal(Args... args) {
+        globalMapper().clear();
+        globalMapper() = _create(globalMapper(), std::forward<Args>(args)...);
+        return globalMapper();
+    }
+
+    template<typename... Args>
+    static Mapper<T> create(Args... args) {
         Mapper<T> p;
-        return _makeParser(p, std::forward<Args>(args)...);
+        return _create(p, std::forward<Args>(args)...);
     }
 
     template<typename A, typename B>
@@ -80,9 +92,6 @@ public:
     static MapperType mapper(A member, B pt) {
         return _mapper(member, pt);
     }
-
-    Mapper() {}
-    virtual ~Mapper() {}
 
     void addPair(IdentifierType id, MapperType p) {
         parsers[id] = p;
@@ -111,15 +120,24 @@ public:
         return t;
     }
 
+    void clear() {
+        parsers.clear();
+    }
+
 private:
     std::unordered_map<IdentifierType, MapperType> parsers;
 
-    static Mapper<T> _makeParser(Mapper<T> p) { return p; }
+    static Mapper<T>& globalMapper() {
+        static Mapper<T> mapper;
+        return mapper;
+    }
+
+    static Mapper<T> _create(Mapper<T> p) { return p; }
 
     template<typename Second, typename... Args>
-    static Mapper<T> _makeParser(Mapper<T> p, IdentifierType f, Second s, Args... args) {
+    static Mapper<T> _create(Mapper<T> p, IdentifierType f, Second s, Args... args) {
         p.addPair(f, s);
-        return _makeParser(p, std::forward<Args>(args)...);
+        return _create(p, std::forward<Args>(args)...);
     }
 
     template<typename U, typename Mapper>
@@ -196,10 +214,5 @@ private:
     }
 
 };
-
-template<typename U, typename T>
-inline auto cm(U member, Mapper<T> pt) -> decltype(Mapper<T>::containerMapper(member, pt)) {
-    return Mapper<T>::containerMapper(member, pt);
-}
 
 } // namespace initor

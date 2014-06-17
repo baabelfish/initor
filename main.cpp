@@ -38,7 +38,7 @@ private:
 int main() {
     using namespace initor;
 
-    auto test_mapper = initor::Mapper<Test>::makeParser(
+    Mapper<Test>::createGlobal(
         "x", &Test::x,
         "y", &Test::y,
         "z", &Test::z,
@@ -48,16 +48,17 @@ int main() {
         "set", &Test::set,
         "map", &Test::map,
         "s", [](Test& t, picojson::value v) { t.s = { std::stoi(v.to_str()), 0 }; },
-        "nested", Mapper<Test>::mapper(&Test::nested, Mapper<Test::Wat>::makeParser(
+        "nested", Mapper<Test>::mapper(&Test::nested, Mapper<Test::Wat>::create(
             "a", &Test::Wat::a
         )),
-        "nestedList", Mapper<Test>::containerMapper(&Test::smt, Mapper<Something>::makeParser(
+        "nestedList", Mapper<Test>::containerMapper(&Test::smt, Mapper<Something>::create(
             "a", &Something::a,
             "b", &Something::b
         ))
     );
 
-    auto n = test_mapper.init(parseJsonFile("test.json"));
+    auto mapper = Mapper<Test>::global();
+    auto n = mapper.init(parseJsonFile("test.json"));
 
     std::cout << "x:       " << n.x << std::endl;
     std::cout << "y:       " << n.y << std::endl;
